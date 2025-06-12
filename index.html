@@ -1,44 +1,154 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Security Guard Sign-Off</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  </head>
-  <body>
-    <h2>Security Guard Sign-Off</h2>
-    <form id="signOffForm">
-      <label for="name">Name:</label><br />
-      <input type="text" id="name" required /><br /><br />
-      <button type="submit">Submit</button>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Submit Data</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f4f4;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background: white;
+      padding: 25px 20px;
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+      max-width: 400px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    h2 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 20px;
+      font-size: 20px;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      margin-top: 6px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+
+    input[type="submit"] {
+      width: 100%;
+      padding: 12px;
+      margin-top: 20px;
+      background-color: #4CAF50;
+      color: white;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    input[type="submit"]:hover {
+      background-color: #45a049;
+    }
+
+    .status {
+      text-align: center;
+      margin-top: 15px;
+      color: #555;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>Submit form after inspection</h2>
+
+    <form id="locationForm" method="POST" action="https://script.google.com/macros/s/AKfycbwlQ60k2yT1FMKB4G7n3HVbVez-BS2mbc3iLBDVIxz_Suc56O0hwgC__4Myb6ai9INVLQ/exec">
+      
+      <label for="empid">EMP ID:</label>
+      <input type="text" id="empid" name="empid" required>
+
+      <label for="name">Your Name:</label>
+      <input type="text" name="name" id="name" placeholder="Enter your name" required>
+
+      <input type="hidden" name="lat" id="lat">
+      <input type="hidden" name="lng" id="lng">
+
+      <input type="submit" value="Submit">
     </form>
 
-    <script>
-      document.getElementById("signOffForm").addEventListener("submit", function (e) {
-        e.preventDefault();
-        if (!navigator.geolocation) {
-          alert("Geolocation not supported");
-          return;
+    <div class="status" id="status"></div>
+  </div>
+
+<script>
+  const latField = document.getElementById("lat");
+  const lngField = document.getElementById("lng");
+  const statusDiv = document.getElementById("status");
+
+  function setLocation(lat, lng) {
+    latField.value = lat;
+    lngField.value = lng;
+    sessionStorage.setItem("lat", lat);
+    sessionStorage.setItem("lng", lng);
+  }
+
+  function getLocation(callback) {
+    const savedLat = sessionStorage.getItem("lat");
+    const savedLng = sessionStorage.getItem("lng");
+
+    if (savedLat && savedLng) {
+      setLocation(savedLat, savedLng);
+      if (callback) callback();
+      return;
+    }
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          setLocation(position.coords.latitude, position.coords.longitude);
+          if (callback) callback();
+        },
+        error => {
+          statusDiv.innerText = "Location access denied.";
         }
+      );
+    } else {
+      statusDiv.innerText = "Geolocation is not supported.";
+    }
+  }
 
-        navigator.geolocation.getCurrentPosition(function (position) {
-          const data = {
-            name: document.getElementById("name").value,
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          };
-
-          fetch("https://script.google.com/macros/s/AKfycbyrYGP27irstiABG9BUkalJPeji1jXcvUPEqaaBn_LYSRvRwyCQc2SYSKkaNYLCi80Q/exec", {
-            method: "POST",
-            body: JSON.stringify(data),
-            headers: {
-              "Content-Type": "application/json"
-            },
-          })
-            .then((res) => res.text())
-            .then((msg) => alert("Sign-Off Submitted!"))
-            .catch((err) => alert("Error: " + err));
-        });
+  document.getElementById("locationForm").addEventListener("submit", function (e) {
+    if (!latField.value || !lngField.value) {
+      e.preventDefault();
+      statusDiv.innerText = "Please allow location access before submitting.";
+      getLocation(() => {
+        statusDiv.innerText = "Location fetched. Please submit again.";
       });
-    </script>
-  </body>
+    } else {
+      statusDiv.innerText = "Submitting...";
+    }
+  });
+
+  window.onload = () => getLocation();
+</script>
+
+
+</body>
 </html>
